@@ -1,5 +1,5 @@
 <template>
-  <>
+  <div>
     <CRow>
       <CCol :sm="6" :xl="3" v-for="widget in widgets" :key="widget.title">
         <CWidgetStatsA
@@ -58,7 +58,7 @@
         </CCard>
       </CCol>
     </CRow>
-  </>
+  </div>
 </template>
 
 <script>

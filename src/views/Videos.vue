@@ -1,5 +1,5 @@
 <template>
-  <>
+  <div>
     <CCard class="mb-4">
       <CCardHeader class="d-flex justify-content-between align-items-center">
         <strong>QA Videos</strong>
@@ -67,7 +67,7 @@
         </CPagination>
       </CCardBody>
     </CCard>
-  </>
+  </div>
 </template>
 
 <script>
