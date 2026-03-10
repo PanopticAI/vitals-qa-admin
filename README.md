@@ -64,6 +64,17 @@ CoreUI is meant to be the UX game changer. Pure & transparent code is devoid of 
 
 ## Quick Start
 
+Authentication and API notes
+
+- This frontend expects a QA services API (service-qa) reachable at VITE_API_URL. By default the env file contains a deployment placeholder.
+- The backend can use either Cognito (JWT Bearer) or API Key authentication depending on deployment. To support local/dev testing without Cognito, this frontend supports an API-key fallback.
+- For local development you can set VITE_QA_API_KEY in .env (example included) and then sign in using the admin account:
+  - Email: master@panoptic.ai
+  - Password: PanopticAI123!
+
+  The login flow will set the API key in localStorage as qa_auth_token and subsequent requests will be sent with x-api-key header.
+
+
 - [Download the latest release](https://github.com/coreui/coreui-free-vue-admin-template/archive/refs/heads/main.zip)
 - Clone the repo: `git clone https://github.com/coreui/coreui-free-vue-admin-template.git`
 
