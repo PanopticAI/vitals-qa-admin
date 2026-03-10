@@ -34,6 +34,8 @@ export default defineConfig(() => {
     },
     server: {
       port: 3000,
+      host: true,
+      allowedHosts: ['.trycloudflare.com', '.ngrok.io', 'localhost'],
       proxy: {
         // https://vitejs.dev/config/server-options.html
       },
