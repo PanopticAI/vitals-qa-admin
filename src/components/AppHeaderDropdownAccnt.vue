@@ -1,12 +1,18 @@
 <script setup>
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import avatar from '@/assets/images/avatars/8.jpg'
 import api from '@/services/api'
 
 const router = useRouter()
 const itemsCount = 42
+const showLogoutModal = ref(false)
 
-const handleLogout = () => {
+const handleLogoutClick = () => {
+  showLogoutModal.value = true
+}
+
+const confirmLogout = () => {
   api.logout()
   router.push({ name: 'Login' })
 }
@@ -58,7 +64,27 @@ const handleLogout = () => {
       </CDropdownItem>
       <CDropdownDivider />
       <CDropdownItem> <CIcon icon="cil-shield-alt" /> Lock Account </CDropdownItem>
-      <CDropdownItem @click="handleLogout"> <CIcon icon="cil-lock-locked" /> Logout </CDropdownItem>
+      <CDropdownItem @click="handleLogoutClick"> <CIcon icon="cil-lock-locked" /> Logout </CDropdownItem>
     </CDropdownMenu>
   </CDropdown>
+
+  <!-- Logout Confirmation Modal -->
+  <CModal
+    alignment="center"
+    :visible="showLogoutModal"
+    @close="showLogoutModal = false"
+  >
+    <CModalHeader>
+      <CModalTitle>Confirm Logout</CModalTitle>
+    </CModalHeader>
+    <CModalBody>Are you sure you want to logout?</CModalBody>
+    <CModalFooter>
+      <CButton color="secondary" @click="showLogoutModal = false">
+        Cancel
+      </CButton>
+      <CButton color="danger" @click="confirmLogout">
+        Logout
+      </CButton>
+    </CModalFooter>
+  </CModal>
 </template>
