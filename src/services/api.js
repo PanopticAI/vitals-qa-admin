@@ -1,4 +1,9 @@
 import axios from 'axios'
+import {
+  CognitoUserPool,
+  CognitoUser,
+  AuthenticationDetails,
+} from 'amazon-cognito-identity-js'
 
 const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3000/'
 
@@ -13,6 +18,13 @@ const api = axios.create({
 const getToken = () => localStorage.getItem('qa_auth_token')
 const setToken = (token) => localStorage.setItem('qa_auth_token', token)
 const clearToken = () => localStorage.removeItem('qa_auth_token')
+
+// Cognito setup (fallback)
+const POOL_DATA = {
+  UserPoolId: import.meta.env.VITE_COG_USER_POOL_ID || 'ap-southeast-1_bcok6ybJZ',
+  ClientId: import.meta.env.VITE_COG_CLIENT_ID || '1e5n8panikosgap84vcmiugjge',
+}
+const userPool = new CognitoUserPool(POOL_DATA)
 
 // Request interceptor to add auth header
 api.interceptors.request.use((config) => {
@@ -42,14 +54,29 @@ api.interceptors.response.use(
   }
 )
 
+async function cognitoSignIn(email, password) {
+  return new Promise((resolve, reject) => {
+    const authDetails = new AuthenticationDetails({ Username: email, Password: password })
+    const cognitoUser = new CognitoUser({ Username: email, Pool: userPool })
+    cognitoUser.authenticateUser(authDetails, {
+      onSuccess: (res) => {
+        try {
+          const token = res.getIdToken().getJwtToken()
+          setToken(token)
+          resolve({ ok: true, token })
+        } catch (e) {
+          reject(e)
+        }
+      },
+      onFailure: (err) => reject(err),
+      newPasswordRequired: () => reject(new Error('New password required')),
+    })
+  })
+}
+
 export default {
   // Auth
   login: async (email, password) => {
-    // service-qa doesn't expose an auth endpoint. Support two flows:
-    // 1) If a backend /auth/login exists, call it and use its token.
-    // 2) If VITE_QA_API_KEY is provided (local/dev), and the user supplies the
-    //    known admin credentials, set the API key as the token so requests use x-api-key.
-
     // Try backend auth endpoint first
     try {
       const res = await api.post('/auth/login', { email, password })
@@ -58,7 +85,15 @@ export default {
         return res.data
       }
     } catch (e) {
-      // ignore and try fallback
+      // ignore and try Cognito
+    }
+
+    // Try Cognito
+    try {
+      const cog = await cognitoSignIn(email, password)
+      return cog
+    } catch (e) {
+      // ignore and try env fallback
     }
 
     // Fallback: env-provided API key (useful for local dev)
@@ -71,7 +106,7 @@ export default {
     }
 
     // Final fallback: reject with a helpful message
-    return Promise.reject({ message: 'Authentication failed. Configure VITE_QA_API_KEY for local API-key login or ensure the backend /auth/login is available.' })
+    return Promise.reject({ message: 'Authentication failed. Configure VITE_QA_API_KEY or check Cognito credentials.' })
   },
 
   setApiKey: (apiKey) => {
