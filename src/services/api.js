@@ -19,7 +19,7 @@ const getToken = () => localStorage.getItem('qa_auth_token')
 const setToken = (token) => localStorage.setItem('qa_auth_token', token)
 const clearToken = () => localStorage.removeItem('qa_auth_token')
 
-// Cognito setup (fallback)
+// Cognito setup
 const POOL_DATA = {
   UserPoolId: import.meta.env.VITE_COG_USER_POOL_ID || 'ap-southeast-1_bcok6ybJZ',
   ClientId: import.meta.env.VITE_COG_CLIENT_ID || '1e5n8panikosgap84vcmiugjge',
@@ -31,12 +31,7 @@ api.interceptors.request.use((config) => {
   const token = getToken()
   if (token) {
     config.headers = config.headers || {}
-    // If token looks like an API key (no spaces, no dots), send as X-Api-Key
-    if (!token.includes(' ') && !token.includes('.') && token.length < 100) {
-      config.headers['x-api-key'] = token
-    } else {
-      config.headers.Authorization = `Bearer ${token}`
-    }
+    config.headers.Authorization = `Bearer ${token}`
   }
   return config
 })
@@ -47,74 +42,52 @@ api.interceptors.response.use(
   (error) => {
     if (error.response && error.response.status === 401) {
       clearToken()
-      // optional: emit an event or use window.location to redirect to login
       window.dispatchEvent(new CustomEvent('qa:unauthorized'))
     }
     return Promise.reject(error)
   }
 )
 
-async function cognitoSignIn(email, password) {
+// Cognito login (same pattern as vitals-v2-qa-vue)
+async function cognitoLogin(email, password) {
   return new Promise((resolve, reject) => {
-    const authDetails = new AuthenticationDetails({ Username: email, Password: password })
-    const cognitoUser = new CognitoUser({ Username: email, Pool: userPool })
+    const authDetails = new AuthenticationDetails({
+      Username: email,
+      Password: password,
+    })
+
+    const cognitoUser = new CognitoUser({
+      Username: email,
+      Pool: userPool,
+    })
+
     cognitoUser.authenticateUser(authDetails, {
       onSuccess: (res) => {
-        try {
-          const token = res.getIdToken().getJwtToken()
-          setToken(token)
-          resolve({ ok: true, token })
-        } catch (e) {
-          reject(e)
-        }
+        const token = res.getIdToken().getJwtToken()
+        setToken(token)
+        resolve({ ok: true, token })
       },
-      onFailure: (err) => reject(err),
-      newPasswordRequired: () => reject(new Error('New password required')),
+      onFailure: (err) => {
+        reject(err)
+      },
+      newPasswordRequired: () => {
+        reject(new Error('New password required. Use AWS console or CLI to set permanent password.'))
+      },
     })
   })
 }
 
 export default {
-  // Auth
+  // Auth - use Cognito directly (no backend auth endpoint)
   login: async (email, password) => {
-    // Try backend auth endpoint first
-    try {
-      const res = await api.post('/auth/login', { email, password })
-      if (res.data && res.data.token) {
-        setToken(res.data.token)
-        return res.data
-      }
-    } catch (e) {
-      // ignore and try Cognito
-    }
-
-    // Try Cognito
-    try {
-      const cog = await cognitoSignIn(email, password)
-      return cog
-    } catch (e) {
-      // ignore and try env fallback
-    }
-
-    // Fallback: env-provided API key (useful for local dev)
-    const envApiKey = import.meta.env.VITE_QA_API_KEY
-    const fallbackEmail = 'master@panoptic.ai'
-    const fallbackPassword = 'PanopticAI123!'
-    if (envApiKey && email === fallbackEmail && password === fallbackPassword) {
-      setToken(envApiKey)
-      return { ok: true, token: envApiKey }
-    }
-
-    // Final fallback: reject with a helpful message
-    return Promise.reject({ message: 'Authentication failed. Configure VITE_QA_API_KEY or check Cognito credentials.' })
-  },
-
-  setApiKey: (apiKey) => {
-    // helper to set x-api-key as token
-    setToken(apiKey)
+    return cognitoLogin(email, password)
   },
 
   logout: () => {
+    const user = userPool.getCurrentUser()
+    if (user) {
+      user.signOut()
+    }
     clearToken()
   },
 
