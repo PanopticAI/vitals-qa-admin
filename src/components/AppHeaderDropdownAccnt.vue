@@ -1,7 +1,15 @@
 <script setup>
+import { useRouter } from 'vue-router'
 import avatar from '@/assets/images/avatars/8.jpg'
+import api from '@/services/api'
 
+const router = useRouter()
 const itemsCount = 42
+
+const handleLogout = () => {
+  api.logout()
+  router.push({ name: 'Login' })
+}
 </script>
 
 <template>
@@ -50,7 +58,7 @@ const itemsCount = 42
       </CDropdownItem>
       <CDropdownDivider />
       <CDropdownItem> <CIcon icon="cil-shield-alt" /> Lock Account </CDropdownItem>
-      <CDropdownItem> <CIcon icon="cil-lock-locked" /> Logout </CDropdownItem>
+      <CDropdownItem @click="handleLogout"> <CIcon icon="cil-lock-locked" /> Logout </CDropdownItem>
     </CDropdownMenu>
   </CDropdown>
 </template>
