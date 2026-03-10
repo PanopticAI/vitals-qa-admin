@@ -36,7 +36,6 @@ export default defineConfig(() => {
       extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json', '.vue', '.scss'],
     },
     server: {
-      port: 3000,
       host: true,
       allowedHosts: ['.trycloudflare.com', '.ngrok.io', 'localhost'],
       proxy: {
