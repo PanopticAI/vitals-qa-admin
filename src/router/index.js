@@ -46,4 +46,18 @@ const router = createRouter({
   },
 })
 
+// Auth guard - redirect to login if not authenticated
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem('qa_auth_token')
+  const isAuthenticated = !!token
+
+  if (to.name !== 'Login' && !isAuthenticated) {
+    next({ name: 'Login' })
+  } else if (to.name === 'Login' && isAuthenticated) {
+    next({ name: 'Dashboard' })
+  } else {
+    next()
+  }
+})
+
 export default router
