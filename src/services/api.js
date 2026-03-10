@@ -19,7 +19,12 @@ api.interceptors.request.use((config) => {
   const token = getToken()
   if (token) {
     config.headers = config.headers || {}
-    config.headers.Authorization = `Bearer ${token}`
+    // If token looks like an API key (no spaces, no dots), send as X-Api-Key
+    if (!token.includes(' ') && !token.includes('.') && token.length < 100) {
+      config.headers['x-api-key'] = token
+    } else {
+      config.headers.Authorization = `Bearer ${token}`
+    }
   }
   return config
 })
@@ -39,14 +44,34 @@ api.interceptors.response.use(
 
 export default {
   // Auth
-  login: (email, password) => {
-    // service-qa doesn't have an auth lambda; support x-api-key-based admin flows
-    // For now, if backend expects x-api-key, store it as token
-    // We'll attempt /auth/login POST if present
-    return api.post('/auth/login', { email, password }).then((r) => {
-      if (r.data && r.data.token) setToken(r.data.token)
-      return r.data
-    })
+  login: async (email, password) => {
+    // service-qa doesn't expose an auth endpoint. Support two flows:
+    // 1) If a backend /auth/login exists, call it and use its token.
+    // 2) If VITE_QA_API_KEY is provided (local/dev), and the user supplies the
+    //    known admin credentials, set the API key as the token so requests use x-api-key.
+
+    // Try backend auth endpoint first
+    try {
+      const res = await api.post('/auth/login', { email, password })
+      if (res.data && res.data.token) {
+        setToken(res.data.token)
+        return res.data
+      }
+    } catch (e) {
+      // ignore and try fallback
+    }
+
+    // Fallback: env-provided API key (useful for local dev)
+    const envApiKey = import.meta.env.VITE_QA_API_KEY
+    const fallbackEmail = 'master@panoptic.ai'
+    const fallbackPassword = 'PanopticAI123!'
+    if (envApiKey && email === fallbackEmail && password === fallbackPassword) {
+      setToken(envApiKey)
+      return { ok: true, token: envApiKey }
+    }
+
+    // Final fallback: reject with a helpful message
+    return Promise.reject({ message: 'Authentication failed. Configure VITE_QA_API_KEY for local API-key login or ensure the backend /auth/login is available.' })
   },
 
   setApiKey: (apiKey) => {

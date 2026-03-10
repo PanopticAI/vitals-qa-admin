@@ -63,6 +63,7 @@
 
 <script>
 import { CIcon } from '@coreui/icons-vue'
+import { ref, onMounted } from 'vue'
 
 export default {
   name: 'Dashboard',
@@ -70,7 +71,7 @@ export default {
     CIcon,
   },
   setup() {
-    const { ref, onMounted } = require('vue')
+    // ref and onMounted are imported at top-level
     const widgets = ref([
       { color: 'primary', title: 'Total Videos', value: '-', icon: 'cil-video' },
       { color: 'info', title: 'Active Users', value: '-', icon: 'cil-people' },
