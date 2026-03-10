@@ -92,10 +92,9 @@ export default {
     },
   },
   mounted() {
-    // prefill QA master credentials for convenience in dev
+    // prefill QA master email for convenience in dev
     if (import.meta.env.DEV) {
       this.email = 'master@panoptic.ai'
-      this.password = 'PanopticAI123!'
     }
   },
 }
