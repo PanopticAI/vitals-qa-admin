@@ -91,11 +91,6 @@ export default {
       }
     },
   },
-  mounted() {
-    // prefill QA master email for convenience in dev
-    if (import.meta.env.DEV) {
-      this.email = 'master@panoptic.ai'
-    }
-  },
+
 }
 </script>
