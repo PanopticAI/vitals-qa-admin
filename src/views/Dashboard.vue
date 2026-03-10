@@ -70,12 +70,29 @@ export default {
     CIcon,
   },
   setup() {
-    const widgets = [
-      { color: 'primary', title: 'Total Videos', value: '24', icon: 'cil-video' },
-      { color: 'info', title: 'Active Users', value: '12', icon: 'cil-people' },
-      { color: 'warning', title: 'Tests Run', value: '156', icon: 'cil-chart' },
-      { color: 'success', title: 'Success Rate', value: '94%', icon: 'cil-check-circle' },
-    ]
+    const { ref, onMounted } = require('vue')
+    const widgets = ref([
+      { color: 'primary', title: 'Total Videos', value: '-', icon: 'cil-video' },
+      { color: 'info', title: 'Active Users', value: '-', icon: 'cil-people' },
+      { color: 'warning', title: 'Tests Run', value: '-', icon: 'cil-chart' },
+      { color: 'success', title: 'Success Rate', value: '-', icon: 'cil-check-circle' },
+    ])
+
+    const fetchStats = async () => {
+      try {
+        const api = await import('../services/api.js')
+        // try videos list for counts
+        const v = await api.default.listVideos()
+        const total = (v.items || []).length
+        widgets.value[0].value = String(total)
+      } catch (e) {
+        // leave placeholders
+      }
+    }
+
+    onMounted(() => {
+      fetchStats()
+    })
 
     return {
       widgets,

@@ -79,16 +79,40 @@ export default {
     CIcon,
   },
   setup() {
-    const videos = [
-      { id: 'VID001', title: 'Sample Video 1', duration: '00:30', status: 'Active', created: '2026-03-10' },
-      { id: 'VID002', title: 'Sample Video 2', duration: '00:45', status: 'Active', created: '2026-03-09' },
-      { id: 'VID003', title: 'Sample Video 3', duration: '01:00', status: 'Archived', created: '2026-03-08' },
-      { id: 'VID004', title: 'Sample Video 4', duration: '00:20', status: 'Active', created: '2026-03-07' },
-      { id: 'VID005', title: 'Sample Video 5', duration: '00:15', status: 'Active', created: '2026-03-06' },
-    ]
+    const { ref, onMounted } = require('vue')
+    const videos = ref([])
+    const loading = ref(false)
+    const error = ref(null)
+
+    const fetchVideos = async () => {
+      loading.value = true
+      error.value = null
+      try {
+        const api = await import('../services/api.js')
+        const res = await api.default.listVideos()
+        videos.value = (res.items || []).map((it) => ({
+          id: it.videoId,
+          title: it.displayName,
+          duration: it.duration || '-',
+          status: it.status,
+          created: it.createdAt,
+        }))
+      } catch (e) {
+        error.value = e.message || 'Failed to load videos'
+      } finally {
+        loading.value = false
+      }
+    }
+
+    onMounted(() => {
+      fetchVideos()
+    })
 
     return {
       videos,
+      loading,
+      error,
+      fetchVideos,
     }
   },
 }

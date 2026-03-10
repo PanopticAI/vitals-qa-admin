@@ -89,16 +89,46 @@ export default {
     CIcon,
   },
   setup() {
-    const users = [
-      { id: 1, name: 'John Doe', email: 'john@example.com', role: 'Admin', status: 'Active', lastLogin: '2026-03-10' },
-      { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'User', status: 'Active', lastLogin: '2026-03-09' },
-      { id: 3, name: 'Bob Wilson', email: 'bob@example.com', role: 'User', status: 'Inactive', lastLogin: '2026-03-01' },
-      { id: 4, name: 'Alice Brown', email: 'alice@example.com', role: 'Admin', status: 'Active', lastLogin: '2026-03-10' },
-      { id: 5, name: 'Charlie Davis', email: 'charlie@example.com', role: 'User', status: 'Active', lastLogin: '2026-03-08' },
-    ]
+    const { ref, onMounted } = require('vue')
+    const users = ref([])
+    const loading = ref(false)
+    const error = ref(null)
+
+    const fetchUsers = async () => {
+      loading.value = true
+      error.value = null
+      try {
+        const api = await import('../services/api.js')
+        const res = await api.default.listUsers()
+        users.value = (res.items || []).map((u, i) => ({
+          id: u.userId || i,
+          name: u.name || u.email || 'User',
+          email: u.email || '-',
+          role: u.role || 'User',
+          status: u.status || 'Active',
+          lastLogin: u.lastLogin || '-',
+        }))
+      } catch (e) {
+        // fallback to sample data if users endpoint not available
+        users.value = [
+          { id: 1, name: 'John Doe', email: 'john@example.com', role: 'Admin', status: 'Active', lastLogin: '2026-03-10' },
+          { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'User', status: 'Active', lastLogin: '2026-03-09' },
+        ]
+        error.value = e.message
+      } finally {
+        loading.value = false
+      }
+    }
+
+    onMounted(() => {
+      fetchUsers()
+    })
 
     return {
       users,
+      loading,
+      error,
+      fetchUsers,
     }
   },
 }

@@ -10,12 +10,13 @@
                 <h2>Vitals QA Admin</h2>
                 <p class="text-body-secondary">Sign in to your account</p>
               </div>
-              <CForm>
+              <CForm @submit.prevent="onSubmit">
                 <CInputGroup class="mb-3">
                   <CInputGroupText>
                     <CIcon icon="cil-user" />
                   </CInputGroupText>
                   <CFormInput
+                    v-model="email"
                     placeholder="Email"
                     autocomplete="email"
                     type="email"
@@ -26,6 +27,7 @@
                     <CIcon icon="cil-lock-locked" />
                   </CInputGroupText>
                   <CFormInput
+                    v-model="password"
                     type="password"
                     placeholder="Password"
                     autocomplete="current-password"
@@ -33,7 +35,7 @@
                 </CInputGroup>
                 <CRow>
                   <CCol :xs="6">
-                    <CFormCheck id="remember" label="Remember me" />
+                    <CFormCheck id="remember" label="Remember me" v-model="remember" />
                   </CCol>
                   <CCol :xs="6" class="text-end">
                     <CButton color="link" class="px-0">
@@ -41,8 +43,8 @@
                     </CButton>
                   </CCol>
                 </CRow>
-                <CButton color="primary" class="w-100 mt-3">
-                  Sign In
+                <CButton :disabled="loading" color="primary" class="w-100 mt-3" type="submit">
+                  {{ loading ? 'Signing in...' : 'Sign In' }}
                 </CButton>
               </CForm>
             </CCardBody>
@@ -55,11 +57,46 @@
 
 <script>
 import { CIcon } from '@coreui/icons-vue'
+import api from '@/services/api'
 
 export default {
   name: 'Login',
   components: {
     CIcon,
+  },
+  data() {
+    return {
+      email: '',
+      password: '',
+      remember: false,
+      loading: false,
+    }
+  },
+  methods: {
+    async onSubmit() {
+      this.loading = true
+      try {
+        const res = await api.login(this.email, this.password)
+        // If backend uses x-api-key style, allow manual set
+        if (res && res.apiKey) {
+          api.setApiKey(res.apiKey)
+        }
+        // Redirect to dashboard
+        this.$router.push({ name: 'Dashboard' })
+      } catch (e) {
+        console.error('Login failed', e)
+        alert('Login failed: ' + (e.response?.data?.message || e.message || 'Unknown error'))
+      } finally {
+        this.loading = false
+      }
+    },
+  },
+  mounted() {
+    // prefill QA master credentials for convenience in dev
+    if (import.meta.env.DEV) {
+      this.email = 'master@panoptic.ai'
+      this.password = 'PanopticAI123!'
+    }
   },
 }
 </script>
