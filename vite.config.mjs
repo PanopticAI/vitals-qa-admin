@@ -5,6 +5,9 @@ import autoprefixer from 'autoprefixer'
 
 export default defineConfig(() => {
   return {
+    define: {
+      global: 'globalThis',
+    },
     plugins: [vue()],
     base: './',
     css: {
